@@ -5,3 +5,4 @@ openpyxl
 nltk
 wordcloud
 matplotlib
+google-cloud-firestore
