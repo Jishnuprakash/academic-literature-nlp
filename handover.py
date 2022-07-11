@@ -170,17 +170,6 @@ with st.spinner('Updating Scatterplot...'):
     st.pyplot(fig)
     # if cluster!=len(topics):
     #     st.text(f"Key words in cluster {cluster}, are {topics[cluster]}\n\n These are found by Latent Dirichlet allocation - Topic modelling")
-
-
-# Contact Form
-with st.expander("Contact us"):
-    with st.form(key='contact', clear_on_submit=True):
-        
-        email = st.text_input('Contact Email')
-        st.text_area("Query","Please fill in all the information or we may not be able to process your request")  
-        
-        submit_button = st.form_submit_button(label='Send Information')
-        
         
         
         
