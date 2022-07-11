@@ -9,13 +9,14 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-# import seaborn as sns
-# import nltk
 from nltk import word_tokenize
 from nltk.probability import FreqDist
 from matplotlib import pyplot as plt
 from wordcloud import WordCloud
 from nltk.corpus import stopwords
+
+import nltk
+nltk.download('punkt')
 
 
 st.set_page_config(page_title='Analysis on Research Papers',  layout='wide', page_icon=':computer:')
