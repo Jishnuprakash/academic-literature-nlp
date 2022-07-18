@@ -119,9 +119,12 @@ with st.spinner('Updating Report...'):
     
     s0, s1, s2, s3 = st.columns((0.5, 0.5, 0.5, 0.5))
     # Pie chart for Subject
-    subj = s0.selectbox('Choose Subject', subjects.subject.values.tolist(), index=0, help = 'Filter report to show only one subject')
-    country = s2.selectbox('Choose Country', sum([['all'],countries.affiliation_country.values.tolist()], []), index=0, help = 'Filter report to show only one country')
+    subj = s0.multiselect('Choose Subject', subjects.subject.values.tolist(), default='COMP', help = 'Filter report to show info on subject level')
+    country = s2.multiselect('Choose Country', sum([['all'], countries.affiliation_country.values.tolist()], []), default='all', help = 'Filter report to show info on country level')
     threshold = s3.number_input('Choose Minimum number of papers', min_value=1, value=100, help = 'Enter number of minimum papers')
+
+    subj = subj[0] if len(subj)==0 else '|'.join(subj)
+    country = 'all' if country==['all'] else '|'.join([i for i in country if i!='all'])
 
     g2, g5 = st.columns((1, 1))
     if country=='all':
@@ -129,6 +132,7 @@ with st.spinner('Updating Report...'):
     else:
         subj_country = comb_df.loc[comb_df['affiliation_country'].str.contains(country) 
                                    & comb_df['subject'].str.contains(subj)]
+                                   
     s1.metric(label ='Total Research Papers from 2021-22',value = int(len(subj_country)), delta = '', delta_color = 'inverse')
     dat = breakDown(subj, subjects.subject.values.tolist(), subj_country)
     fig = px.pie(values=dat.values(), names=dat.keys())
