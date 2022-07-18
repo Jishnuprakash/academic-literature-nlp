@@ -99,7 +99,7 @@ with st.spinner('Updating Report...'):
     countries, all_c = eda_from_feature('affiliation_country', comb_df)
 
     m1, m_0, m2, m_1, m3 = st.columns((1,1,1,1,1))
-    m1.metric(label ='Total Research Papers from 2021-22',value = int(len(comb_df)), delta = '', delta_color = 'inverse')
+    m1.metric(label =f"Total Research Papers from {min(comb_df.year)} to {max(comb_df.year)}",value = int(len(comb_df)), delta = '', delta_color = 'inverse')
     m2.metric(label ='Total affiliated countries',value = int(len(countries)), delta = '', delta_color = 'inverse')
     m3.metric(label ='Papers Affiliated to United Kingdom',value =int(countries.loc[countries['affiliation_country']=='United Kingdom'].counts) , delta = '', delta_color = 'inverse')
 
@@ -117,30 +117,33 @@ with st.spinner('Updating Report...'):
     g0.plotly_chart(fig, use_container_width=True)
     st.text('')
     
-    s0, s1, s2, s3 = st.columns((0.5, 0.5, 0.5, 0.5))
+    s0, s1, s2, s3, s4 = st.columns((0.2, 0.2, 0.2, 0.2, 0.2))
     # Pie chart for Subject
     subj = s0.multiselect('Choose Subject', subjects.subject.values.tolist(), default='COMP', help = 'Filter report to show info on subject level')
-    country = s2.multiselect('Choose Country', sum([['all'], countries.affiliation_country.values.tolist()], []), default='all', help = 'Filter report to show info on country level')
-    threshold = s3.number_input('Choose Minimum number of papers', min_value=1, value=100, help = 'Enter number of minimum papers')
+    year = s1.multiselect('Choose Year', comb_df.year.unique().tolist(), default=2022, help = 'Filter report with year')
+    country = s3.multiselect('Choose Country', sum([['all'], countries.affiliation_country.values.tolist()], []), default='all', help = 'Filter report to show info on country level')
+    threshold = s4.number_input('Choose Minimum number of papers', min_value=1, value=100, help = 'Enter number of minimum papers')
+
+    dummy_df = comb_df.loc[comb_df.year.isin(year)]
 
     subj = subj[0] if len(subj)==0 else '|'.join(subj)
     country = 'all' if country==['all'] else '|'.join([i for i in country if i!='all'])
 
     g2, g5 = st.columns((1, 1))
     if country=='all':
-        subj_country = comb_df.loc[comb_df['subject'].str.contains(subj)]
+        subj_country = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
     else:
-        subj_country = comb_df.loc[comb_df['affiliation_country'].str.contains(country) 
-                                   & comb_df['subject'].str.contains(subj)]
+        subj_country = dummy_df.loc[dummy_df['affiliation_country'].str.contains(country) 
+                                   & dummy_df['subject'].str.contains(subj)]
                                    
-    s1.metric(label ='Total Research Papers from 2021-22',value = int(len(subj_country)), delta = '', delta_color = 'inverse')
+    s2.metric(label ='Total Research Papers',value = int(len(subj_country)), delta = '', delta_color = 'inverse')
     dat = breakDown(subj, subjects.subject.values.tolist(), subj_country)
     fig = px.pie(values=dat.values(), names=dat.keys())
     fig.update_layout(title_text=f"Interdisciplinary Research in {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
     g2.plotly_chart(fig, use_container_width=True)
 
     # Countries for Subjects
-    # dat = comb_df.loc[comb_df['subject'].str.contains(subj)]
+    # dat = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
     s_countries, all_s_f = eda_from_feature('affiliation_country', subj_country, threshold)
     # fig = go.Figure(data=[go.Pie(values=s_countries['counts'], labels=s_countries['affiliation_country'], hole=.3)])
     fig = px.bar(s_countries, x='affiliation_country', y='counts', color='counts', text='perc')    
@@ -151,7 +154,7 @@ with st.spinner('Updating Report...'):
     #Word Cloud
     st.write(f"Frequent keywords in {subj}")
     g3 = st.columns((1))[0] 
-    fig = make_word_cloud(subj, comb_df, True, False)
+    fig = make_word_cloud(subj, dummy_df, True, False)
     g3.pyplot(fig)
 
 
