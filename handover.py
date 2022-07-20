@@ -21,15 +21,8 @@ from nltk.corpus import stopwords
 st.set_page_config(page_title='Analysis on Research Papers',  layout='wide', page_icon=':computer:')
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-#this is the header
- 
-
-# t2.title("Analysis on Academic Writing using NLP")
-st.image('images/index.jpg', width = 200)
-st.markdown("<h1 style='text-align: center; color: grey;'>Analysis on Academic Writing using NLP</h1>", unsafe_allow_html=True)
-st.markdown("<div style='text-align: center''> website:<a href='https://virtualengineeringcentre.com'>virtualengineeringcentre.com </a> | email: <a href='mailto:vec@liv.ac.uk'>mailto:vec@liv.ac.uk</a> </div>", unsafe_allow_html=True)
-st.text('')
-
+base_df = pd.read_csv("tsne_scopus_arxiv20.csv", low_memory=False)
+### Functions ###
 def gen_wordcloud(text):
     wordcloud = WordCloud(width=1600, height=800, background_color="rgba(255, 255, 255, 0)").generate(text)
     #plot the wordcloud
@@ -89,123 +82,238 @@ def breakDown(sub, uniqSub, df):
     out[other] = other_count
     return out
 
-## Data
+#this is the header
+st.image('images/index.jpg', width = 200)
+st.markdown("<h1 style='text-align: center; color: grey;'>Analysis on Academic Writing using NLP</h1>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center''> website:<a href='https://virtualengineeringcentre.com'>virtualengineeringcentre.com </a> | email: <a href='mailto:vec@liv.ac.uk'>mailto:vec@liv.ac.uk</a> </div>", unsafe_allow_html=True)
+st.text('')
 
-with st.spinner('Updating Report...'):
-    
-    comb_df = pd.read_csv('combinedDf.csv')
-    comb_df['affiliation_country'].fillna('Missing Info', inplace=True)
+data = st.multiselect('Choose API', ['Scopus', 'Arxiv'], default='Scopus', help = 'Filter report to show results based on API')
+scopus = 'Scopus' in data
+arxiv = 'Arxiv' in data
 
-    countries, all_c = eda_from_feature('affiliation_country', comb_df)
+if scopus:
+    with st.spinner('Updating Report...'):
+        
+        # comb_df = pd.read_csv('combinedDf.csv')
+        if scopus and arxiv: 
+            comb_df = base_df
+        else:
+            comb_df = base_df.loc[base_df['api_flag']==0].copy()
 
-    m1, m_0, m2, m_1, m3 = st.columns((1,1,1,1,1))
-    m1.metric(label =f"Total Research Papers from {min(comb_df.year)} to {max(comb_df.year)}",value = int(len(comb_df)), delta = '', delta_color = 'inverse')
-    m2.metric(label ='Total affiliated countries',value = int(len(countries)), delta = '', delta_color = 'inverse')
-    m3.metric(label ='Papers Affiliated to United Kingdom',value =int(countries.loc[countries['affiliation_country']=='United Kingdom'].counts) , delta = '', delta_color = 'inverse')
+        comb_df['affiliation_country'].fillna('Missing Info', inplace=True)
 
-    # Distribution of subjects
-    g1 = st.columns((1))[0]
-    subjects, allSub = eda_from_feature('subject', comb_df)
-    fig = px.bar(subjects, x='subject', y='counts', color='counts', text='perc')    
-    fig.update_layout(title_text="Distribution of subjects",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
-    g1.plotly_chart(fig, use_container_width=True)
+        countries, all_c = eda_from_feature('affiliation_country', comb_df)
 
-     # Distribution of Countries
-    g0 = st.columns((1))[0]
-    fig = px.bar(countries, x='affiliation_country', y='counts', color='counts', text='perc')    
-    fig.update_layout(title_text="Affiliated countries",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
-    g0.plotly_chart(fig, use_container_width=True)
-    st.text('')
-    
-    s0, s1, s2, s3, s4 = st.columns((0.2, 0.2, 0.2, 0.2, 0.2))
-    # Pie chart for Subject
-    subj = s0.multiselect('Choose Subject', subjects.subject.values.tolist(), default='COMP', help = 'Filter report to show info on subject level')
-    year = s1.multiselect('Choose Year', comb_df.year.unique().tolist(), default=2022, help = 'Filter report with year')
-    country = s3.multiselect('Choose Country', sum([['all'], countries.affiliation_country.values.tolist()], []), default='all', help = 'Filter report to show info on country level')
-    threshold = s4.number_input('Choose Minimum number of papers', min_value=1, value=100, help = 'Enter number of minimum papers')
+        m1, m2, m_1, m3 = st.columns((1,1,1,1))
+        m1.metric(label =f"Total Research Papers from {min(comb_df.year)} to {max(comb_df.year)}",value = int(len(comb_df)), delta = '', delta_color = 'inverse')
+        m2.metric(label ='Total affiliated countries',value = int(len(countries)), delta = '', delta_color = 'inverse')
+        m_1.metric(label ='Missing country information',value = countries.iloc[0]['counts'], delta = '', delta_color = 'inverse')
+        m3.metric(label ='Papers Affiliated to United Kingdom',value =int(countries.loc[countries['affiliation_country']=='United Kingdom'].counts) , delta = '', delta_color = 'inverse')
 
-    dummy_df = comb_df.loc[comb_df.year.isin(year)]
+        # Distribution of subjects
+        g1 = st.columns((1))[0]
+        subjects, allSub = eda_from_feature('subject', comb_df)
+        fig = px.bar(subjects, x='subject', y='counts', color='counts', text='perc')    
+        fig.update_layout(title_text="Distribution of subjects",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        g1.plotly_chart(fig, use_container_width=True)
 
-    subj = subj[0] if len(subj)==0 else '|'.join(subj)
-    country = 'all' if country==['all'] else '|'.join([i for i in country if i!='all'])
+        # Distribution of Countries
+        g0 = st.columns((1))[0]
+        fig = px.bar(countries, x='affiliation_country', y='counts', color='counts', text='perc')    
+        fig.update_layout(title_text="Affiliated countries",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        g0.plotly_chart(fig, use_container_width=True)
+        st.text('')
+        
+        s0, s1, s2, s3, s4 = st.columns((0.2, 0.2, 0.2, 0.2, 0.2))
+        # Pie chart for Subject
+        subj = s0.multiselect('Choose Subject', subjects.subject.values.tolist(), default='COMP', help = 'Filter report to show info on subject level')
+        year = s1.multiselect('Choose Year', comb_df.year.unique().tolist(), default=[2022, 2021], help = 'Filter report with year')
+        country = s3.multiselect('Choose Country', sum([['all'], countries.affiliation_country.values.tolist()], []), default='all', help = 'Filter report to show info on country level')
+        threshold = s4.number_input('Choose Minimum number of papers', min_value=1, value=100, help = 'Enter number of minimum papers')
 
-    g2, g5 = st.columns((1, 1))
-    if country=='all':
+        dummy_df = comb_df.loc[comb_df.year.isin(year)]
+
+        subj = subj[0] if len(subj)==0 else '|'.join(subj)
+        country = 'all' if country==['all'] else '|'.join([i for i in country if i!='all'])
+
+        g2, g5 = st.columns((1, 1))
+        if country=='all':
+            subj_country = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
+        else:
+            subj_country = dummy_df.loc[dummy_df['affiliation_country'].str.contains(country) 
+                                    & dummy_df['subject'].str.contains(subj)]
+                                    
+        s2.metric(label ='Total Research Papers',value = int(len(subj_country)), delta = '', delta_color = 'inverse')
+        dat = breakDown(subj, subjects.subject.values.tolist(), subj_country)
+        fig = px.pie(values=dat.values(), names=dat.keys())
+        fig.update_layout(title_text=f"Interdisciplinary Research in {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        g2.plotly_chart(fig, use_container_width=True)
+
+        # Countries for Subjects
+        # dat = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
+        s_countries, all_s_f = eda_from_feature('affiliation_country', subj_country, threshold)
+        # fig = go.Figure(data=[go.Pie(values=s_countries['counts'], labels=s_countries['affiliation_country'], hole=.3)])
+        fig = px.bar(s_countries, x='affiliation_country', y='counts', color='counts', text='perc')    
+        fig.update_layout(title_text=f"Affiliated countries for {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        g5.plotly_chart(fig, use_container_width=True)
+
+
+        #Word Cloud
+        st.write(f"Frequent keywords in {subj}")
+        g3 = st.columns((1))[0] 
+        fig = make_word_cloud(subj, dummy_df, True, False)
+        g3.pyplot(fig)
+
+
+    with st.spinner('Updating Scatterplot...'):
+        # Clustering
+        st.header("Distribution of papers in 2d space based on semantic similarity")
+
+        # tsne = pd.read_csv("tsneDF_20.csv")
+        tsne = comb_df
+        tsne = tsne.loc[tsne['scopus_id'].isin(subj_country.scopus_id)]
+        with open('SA_topics20.txt') as f:
+            topics = f.readlines()
+
+        cluster = st.slider("Select a Cluster Number", min_value=0, max_value=len(topics), value=len(topics), step=1)
+
+        if cluster==len(topics):
+            dat = tsne
+            text = " ".join([topics[i] for i in tsne.cluster.unique()])
+            heading = f"LDA Topic modelling keywords from all research papers"
+        else:
+            dat = tsne.loc[tsne['cluster']==int(cluster)]
+            text = topics[int(cluster)]
+            heading = f"LDA Topic modelling keywords from cluster {cluster}"
+            
+        q0, q1 = st.columns((1,1))
+        st.write(f"Title and Abstract of each paper is combined and converted to vectors using s-BERT model, k-Means for clustering similar papers, & t-SNE for dimensionality reduction")
+        fig = px.scatter(data_frame=dat, x='x0', y='x1',  hover_data=['scopus_id', 'title', 'timestamp', 
+                        'subject'], color='c')
+        legend_names = {dat.loc[dat['cluster']==i].iloc[0]['c']:'C-'+str(i) for i in dat.cluster.unique()}
+        fig.for_each_trace(lambda t: t.update(name = legend_names[t.name],
+                                        legendgroup = legend_names[t.name],
+                                        hovertemplate = t.hovertemplate.replace(t.name, legend_names[t.name])
+                                        ))
+        fig.update_layout(showlegend=True)
+        q1.write("t-sne distribution of papers")
+        q1.plotly_chart(fig, use_container_width=True)
+        q0.write(heading)
+        fig = gen_wordcloud(text)
+        q0.pyplot(fig)
+
+
+        # fig = px.scatter(data_frame=dat, x='x0', y='x1',  hover_data=['scopus_id', 'title', 'timestamp', 
+        #                  'subject'], width=1200, height=1500, color='cluster' )
+        # fig.update_layout(showlegend=True)
+        # st.write(f"Title and Abstract of each paper is combined and converted to vectors using s-BERT model, k-Means for clustering similar papers, & t-SNE for dimensionality reduction")
+        # st.plotly_chart(fig, use_container_width=True)
+        # st.write(heading)
+        # fig = gen_wordcloud(text)
+        # st.pyplot(fig)
+        # # if cluster!=len(topics):
+        # #     st.text(f"Key words in cluster {cluster}, are {topics[cluster]}\n\n These are found by Latent Dirichlet allocation - Topic modelling")
+###############################################################################################################################################################################################
+
+else:
+    with st.spinner('Updating Report...'):
+        
+        # arx_df = pd.read_csv('scopus_arxiv.csv')
+        arx_df = base_df.loc[base_df['api_flag']==1].copy()
+        arx_df['affiliation_country'].fillna('Missing Info', inplace=True)
+
+        countries, all_c = eda_from_feature('affiliation_country', arx_df)
+
+        m1, m2, m_1, m3 = st.columns((1,1,1,1))
+        m1.metric(label =f"Total Research Papers from {min(arx_df.year)} to {max(arx_df.year)}",value = int(len(arx_df)), delta = '', delta_color = 'inverse')
+        m2.metric(label ='Total affiliated countries',value = 0, delta = '', delta_color = 'inverse')
+        m_1.metric(label ='Missing country information (Arxiv)',value = countries.iloc[0]['counts'], delta = '', delta_color = 'inverse')
+        m3.metric(label ='Papers Affiliated to United Kingdom',value =0 , delta = '', delta_color = 'inverse')
+
+        # Distribution of subjects
+        g1 = st.columns((1))[0]
+        subjects, allSub = eda_from_feature('subject', arx_df)
+        fig = px.bar(subjects, x='subject', y='counts', color='counts', text='perc')    
+        fig.update_layout(title_text="Distribution of subjects",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        g1.plotly_chart(fig, use_container_width=True)
+
+        # # Distribution of Countries
+        # g0 = st.columns((1))[0]
+        # fig = px.bar(countries, x='affiliation_country', y='counts', color='counts', text='perc')    
+        # fig.update_layout(title_text="Affiliated countries",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        # g0.plotly_chart(fig, use_container_width=True)
+        # st.text('')
+        
+        s0, s1, s2, s3 = st.columns((0.25, 0.25, 0.25, 0.25))
+        # Pie chart for Subject
+        subj = s0.multiselect('Choose Subject', subjects.subject.values.tolist(), default='COMP', help = 'Filter report to show info on subject level')
+        year = s1.multiselect('Choose Year', sorted(arx_df.year.unique().tolist()), default=[2022, 2021], help = 'Filter report with year')
+        # country = s3.multiselect('Choose Country', sum([['all'], countries.affiliation_country.values.tolist()], []), default='all', help = 'Filter report to show info on country level')
+        threshold = s3.number_input('Choose Minimum number of papers', min_value=1, value=100, help = 'Enter number of minimum papers')
+
+        dummy_df = arx_df.loc[arx_df.year.isin(year)]
+
+        subj = subj[0] if len(subj)==0 else '|'.join(subj)
+        g2, g5 = st.columns((1, 1))
         subj_country = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
-    else:
-        subj_country = dummy_df.loc[dummy_df['affiliation_country'].str.contains(country) 
-                                   & dummy_df['subject'].str.contains(subj)]
-                                   
-    s2.metric(label ='Total Research Papers',value = int(len(subj_country)), delta = '', delta_color = 'inverse')
-    dat = breakDown(subj, subjects.subject.values.tolist(), subj_country)
-    fig = px.pie(values=dat.values(), names=dat.keys())
-    fig.update_layout(title_text=f"Interdisciplinary Research in {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
-    g2.plotly_chart(fig, use_container_width=True)
+                                    
+        s2.metric(label ='Total Research Papers',value = int(len(subj_country)), delta = '', delta_color = 'inverse')
+        dat = breakDown(subj, subjects.subject.values.tolist(), subj_country)
+        fig = px.pie(values=dat.values(), names=dat.keys())
+        fig.update_layout(title_text=f"Interdisciplinary Research in {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        g2.plotly_chart(fig, use_container_width=True)
 
-    # Countries for Subjects
-    # dat = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
-    s_countries, all_s_f = eda_from_feature('affiliation_country', subj_country, threshold)
-    # fig = go.Figure(data=[go.Pie(values=s_countries['counts'], labels=s_countries['affiliation_country'], hole=.3)])
-    fig = px.bar(s_countries, x='affiliation_country', y='counts', color='counts', text='perc')    
-    fig.update_layout(title_text=f"Affiliated countries for {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
-    g5.plotly_chart(fig, use_container_width=True)
+        # Countries for Subjects
+        # dat = dummy_df.loc[dummy_df['subject'].str.contains(subj)]
+        # s_countries, all_s_f = eda_from_feature('affiliation_country', dummy_df, threshold)
+        # # fig = go.Figure(data=[go.Pie(values=s_countries['counts'], labels=s_countries['affiliation_country'], hole=.3)])
+        # fig = px.bar(s_countries, x='affiliation_country', y='counts', color='counts', text='perc')    
+        # fig.update_layout(title_text=f"Affiliated countries for {subj}",title_x=0,margin= dict(l=0,r=10,b=10,t=30))
+        # g5.plotly_chart(fig, use_container_width=True)
 
-
-    #Word Cloud
-    st.write(f"Frequent keywords in {subj}")
-    g3 = st.columns((1))[0] 
-    fig = make_word_cloud(subj, dummy_df, True, False)
-    g3.pyplot(fig)
+        #Word Cloud
+        g5.write(f"Frequent keywords in {subj}")
+        # g3 = st.columns((1))[0] 
+        fig = make_word_cloud(subj, subj_country, True, False)
+        g5.pyplot(fig)
 
 
-with st.spinner('Updating Scatterplot...'):
-    # Clustering
-    st.header("Distribution of papers in 2d space based on semantic similarity")
+    with st.spinner('Updating Scatterplot...'):
+        # Clustering
+        st.header("Distribution of papers in 2d space based on semantic similarity")
 
-    tsne = pd.read_csv("tsneDF_15.csv")
-    tsne = tsne.loc[tsne['scopus_id'].isin(subj_country.scopus_id)]
-    with open('topics15.txt') as f:
-        topics = f.readlines()
+        # tsne = pd.read_csv("tsneDF_20.csv")
+        tsne = arx_df
+        tsne = tsne.loc[tsne['scopus_id'].isin(subj_country.scopus_id)]
+        with open('SA_topics20.txt') as f:
+            topics = f.readlines()
 
-    cluster = st.slider("Select a Cluster Number", min_value=0, max_value=len(topics), value=len(topics), step=1)
+        cluster = st.slider("Select a Cluster Number", min_value=0, max_value=len(topics), value=len(topics), step=1)
 
-    if cluster==len(topics):
-        dat = tsne
-        text = " ".join([topics[i] for i in tsne.cluster.unique()])
-        heading = f"LDA Topic modelling keywords from all research papers"
-    else:
-        dat = tsne.loc[tsne['cluster']==int(cluster)]
-        text = topics[int(cluster)]
-        heading = f"LDA Topic modelling keywords from cluster {cluster}"
-        
-    q0, q1 = st.columns((1,1))
-    st.write(f"Title and Abstract of each paper is combined and converted to vectors using s-BERT model, k-Means for clustering similar papers, & t-SNE for dimensionality reduction")
-    fig = px.scatter(data_frame=dat, x='x0', y='x1',  hover_data=['scopus_id', 'title', 'timestamp', 
-                     'subject'], color='c')
-    legend_names = {dat.loc[dat['cluster']==i].iloc[0]['c']:'C-'+str(i) for i in dat.cluster.unique()}
-    fig.for_each_trace(lambda t: t.update(name = legend_names[t.name],
-                                      legendgroup = legend_names[t.name],
-                                      hovertemplate = t.hovertemplate.replace(t.name, legend_names[t.name])
-                                     ))
-    fig.update_layout(showlegend=True)
-    q1.write("t-sne distribution of papers")
-    q1.plotly_chart(fig, use_container_width=True)
-    q0.write(heading)
-    fig = gen_wordcloud(text)
-    q0.pyplot(fig)
-
-
-    # fig = px.scatter(data_frame=dat, x='x0', y='x1',  hover_data=['scopus_id', 'title', 'timestamp', 
-    #                  'subject'], width=1200, height=1500, color='cluster' )
-    # fig.update_layout(showlegend=True)
-    # st.write(f"Title and Abstract of each paper is combined and converted to vectors using s-BERT model, k-Means for clustering similar papers, & t-SNE for dimensionality reduction")
-    # st.plotly_chart(fig, use_container_width=True)
-    # st.write(heading)
-    # fig = gen_wordcloud(text)
-    # st.pyplot(fig)
-    # # if cluster!=len(topics):
-    # #     st.text(f"Key words in cluster {cluster}, are {topics[cluster]}\n\n These are found by Latent Dirichlet allocation - Topic modelling")
-
-        
-        
+        if cluster==len(topics):
+            dat = tsne
+            text = " ".join([topics[i] for i in tsne.cluster.unique()])
+            heading = f"LDA Topic modelling keywords from all research papers based on their clusters"
+        else:
+            dat = tsne.loc[tsne['cluster']==int(cluster)]
+            text = topics[int(cluster)]
+            heading = f"LDA Topic modelling keywords from cluster {cluster}"
+            
+        q0, q1 = st.columns((1,1))
+        st.write(f"Title and Abstract of each paper is combined and converted to vectors using s-BERT model, k-Means for clustering similar papers, & t-SNE for dimensionality reduction")
+        fig = px.scatter(data_frame=dat, x='x0', y='x1',  hover_data=['scopus_id', 'title', 'timestamp', 
+                        'subject'], color='c')
+        legend_names = {dat.loc[dat['cluster']==i].iloc[0]['c']:'C-'+str(i) for i in dat.cluster.unique()}
+        fig.for_each_trace(lambda t: t.update(name = legend_names[t.name],
+                                        legendgroup = legend_names[t.name],
+                                        hovertemplate = t.hovertemplate.replace(t.name, legend_names[t.name])
+                                        ))
+        fig.update_layout(showlegend=True)
+        q1.write("t-sne distribution of papers")
+        q1.plotly_chart(fig, use_container_width=True)
+        q0.write(heading)
+        fig = gen_wordcloud(text)
+        q0.pyplot(fig)
+            
         
