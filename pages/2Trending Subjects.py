@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 # import seaborn as sns
 import nltk
+nltk.download('punkt')
 from nltk import word_tokenize
 from nltk.probability import FreqDist
 from matplotlib import pyplot as plt
